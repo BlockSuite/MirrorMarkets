@@ -14,7 +14,7 @@ export interface LeaderFromApi {
   rank: number;
 }
 
-function normalizeLeader(raw: any): LeaderFromApi {
+export function normalizeLeader(raw: any): LeaderFromApi {
   return {
     address: raw.proxyWallet?.toLowerCase() ?? '',
     displayName: raw.userName || null,
