@@ -3,9 +3,7 @@ import { PolymarketAdapter } from '../adapters/polymarket.adapter.js';
 
 export const leaderRoutes: FastifyPluginAsync = async (app) => {
   // GET /leaders/leaderboard
-  app.get('/leaderboard', {
-    preHandler: [app.authenticate],
-  }, async (request, reply) => {
+  app.get('/leaderboard', async (request, reply) => {
     const leaders = await PolymarketAdapter.fetchLeaderboard();
 
     // Sync leaders to local DB

@@ -4,6 +4,12 @@ dist/
 .turbo/
 *.tsbuildinfo
 
+# Stale tsc output in src/ dirs (outDir should be dist/)
+services/*/src/**/*.js
+services/*/src/**/*.js.map
+services/*/src/**/*.d.ts
+services/*/src/**/*.d.ts.map
+
 # Environment
 .env
 .env.local
