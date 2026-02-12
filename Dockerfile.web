@@ -13,6 +13,10 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app ./
 COPY . .
+ARG NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=$NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm turbo build --filter=@mirrormarkets/web
 
 FROM base AS runner
