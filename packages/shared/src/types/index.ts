@@ -9,13 +9,25 @@ export interface UserProfile {
 }
 
 export interface WalletInfo {
-  type: 'DYNAMIC_EOA' | 'TRADING_EOA' | 'POLY_PROXY';
+  type: 'DYNAMIC_EOA' | 'TRADING_EOA' | 'SERVER_WALLET' | 'POLY_PROXY';
   address: string;
+}
+
+export interface ServerWalletInfo {
+  id: string;
+  userId: string;
+  dynamicServerWalletId: string;
+  address: string;
+  status: 'CREATING' | 'READY' | 'FAILED';
+  createdAt: string;
 }
 
 export interface ProvisioningStatus {
   dynamicEoa: boolean;
   tradingEoa: boolean;
+  serverWallet: boolean;
+  serverWalletCreating: boolean;
+  serverWalletReady: boolean;
   polyProxy: boolean;
   clobApiKey: boolean;
   copyProfile: boolean;
@@ -123,6 +135,7 @@ export interface SystemStatus {
   api: 'ok' | 'degraded' | 'down';
   database: 'ok' | 'degraded' | 'down';
   redis: 'ok' | 'degraded' | 'down';
+  dynamicApi: 'ok' | 'degraded' | 'down';
   polymarketClob: 'ok' | 'degraded' | 'down';
   relayer: 'ok' | 'degraded' | 'down';
   workers: {

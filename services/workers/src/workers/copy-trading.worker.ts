@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type Redis from 'ioredis';
 import type { Logger } from 'pino';
+import type { TradingAuthorityProvider } from '@mirrormarkets/shared';
 import { WORKER_INTERVALS } from '@mirrormarkets/shared';
 import { CopyEngine } from '../engine/copy-engine.js';
 
@@ -13,8 +14,9 @@ export class CopyTradingWorker {
     private prisma: PrismaClient,
     private redis: Redis,
     private logger: Logger,
+    tradingAuthority: TradingAuthorityProvider,
   ) {
-    this.engine = new CopyEngine(prisma, logger);
+    this.engine = new CopyEngine(prisma, logger, tradingAuthority);
   }
 
   start(): void {

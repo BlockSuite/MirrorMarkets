@@ -5,6 +5,7 @@ import { CopyTradingWorker } from './workers/copy-trading.worker.js';
 import { AutoClaimWorker } from './workers/auto-claim.worker.js';
 import { HealthCheckWorker } from './workers/health-check.worker.js';
 import { PositionSyncWorker } from './workers/position-sync.worker.js';
+import { getTradingAuthorityProvider } from './adapters/trading-authority.factory.js';
 
 const logger = pino({ level: process.env.NODE_ENV === 'production' ? 'info' : 'debug' });
 
@@ -18,7 +19,11 @@ async function main() {
   });
   logger.info('Workers: Connected to Redis');
 
-  const copyWorker = new CopyTradingWorker(prisma, redis, logger);
+  // Phase 2A: Shared trading authority provider for all workers
+  const tradingAuthority = getTradingAuthorityProvider(prisma);
+  logger.info('Workers: Trading authority provider initialized');
+
+  const copyWorker = new CopyTradingWorker(prisma, redis, logger, tradingAuthority);
   const autoClaimWorker = new AutoClaimWorker(prisma, redis, logger);
   const healthWorker = new HealthCheckWorker(prisma, redis, logger);
   const positionWorker = new PositionSyncWorker(prisma, redis, logger);

@@ -1,17 +1,29 @@
-import { Wallet, ethers } from 'ethers';
+import { ethers } from 'ethers';
+import type { TradingAuthorityProvider } from '@mirrormarkets/shared';
 import { POLYMARKET_CONTRACTS, POLYMARKET_URLS } from '@mirrormarkets/shared';
 
+/**
+ * RelayerAdapter — Phase 2A
+ *
+ * Submits gasless transactions via the Polymarket relayer.
+ * All signing is done through the TradingAuthorityProvider — no raw keys.
+ *
+ * [DVC-7] Verify that the relayer accepts signatures from a non-local
+ * signer (i.e., the signed message can be produced by signMessage on
+ * the Dynamic server wallet and still be accepted).
+ */
 export class RelayerAdapter {
   constructor(
-    private tradingWallet: Wallet,
+    private tradingAuthority: TradingAuthorityProvider,
+    private userId: string,
+    private tradingAddress: string,
     private proxyAddress: string,
   ) {}
 
   async approveAndDeposit(amountUsdcRaw: bigint): Promise<string> {
-    // Build approve + deposit through Polymarket relayer (gasless)
     const payload = {
       type: 'PROXY',
-      from: this.tradingWallet.address,
+      from: this.tradingAddress,
       proxy: this.proxyAddress,
       transactions: [
         {
@@ -21,9 +33,10 @@ export class RelayerAdapter {
       ],
     };
 
-    const signature = await this.tradingWallet.signMessage(
-      ethers.getBytes(ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload)))),
+    const messageHash = ethers.getBytes(
+      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
     );
+    const signature = await this.tradingAuthority.signMessage(this.userId, messageHash);
 
     const res = await fetch(`${POLYMARKET_URLS.RELAYER}/relay`, {
       method: 'POST',
@@ -43,7 +56,7 @@ export class RelayerAdapter {
   async withdraw(amountUsdcRaw: bigint, destination: string): Promise<string> {
     const payload = {
       type: 'PROXY',
-      from: this.tradingWallet.address,
+      from: this.tradingAddress,
       proxy: this.proxyAddress,
       transactions: [
         {
@@ -53,9 +66,10 @@ export class RelayerAdapter {
       ],
     };
 
-    const signature = await this.tradingWallet.signMessage(
-      ethers.getBytes(ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload)))),
+    const messageHash = ethers.getBytes(
+      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
     );
+    const signature = await this.tradingAuthority.signMessage(this.userId, messageHash);
 
     const res = await fetch(`${POLYMARKET_URLS.RELAYER}/relay`, {
       method: 'POST',
@@ -79,12 +93,12 @@ export class RelayerAdapter {
 
     const data = iface.encodeFunctionData('redeemPositions', [
       conditionId,
-      [1, 2], // Yes and No outcome indices
+      [1, 2],
     ]);
 
     const payload = {
       type: 'PROXY',
-      from: this.tradingWallet.address,
+      from: this.tradingAddress,
       proxy: this.proxyAddress,
       transactions: [
         {
@@ -94,9 +108,10 @@ export class RelayerAdapter {
       ],
     };
 
-    const signature = await this.tradingWallet.signMessage(
-      ethers.getBytes(ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload)))),
+    const messageHash = ethers.getBytes(
+      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
     );
+    const signature = await this.tradingAuthority.signMessage(this.userId, messageHash);
 
     const res = await fetch(`${POLYMARKET_URLS.RELAYER}/relay`, {
       method: 'POST',

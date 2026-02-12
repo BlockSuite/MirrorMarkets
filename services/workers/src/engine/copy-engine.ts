@@ -1,17 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 import type { Logger } from 'pino';
+import type { TradingAuthorityProvider } from '@mirrormarkets/shared';
+import { AppError, ErrorCodes } from '@mirrormarkets/shared';
 import { CircuitBreaker } from './circuit-breaker.js';
 import { evaluateGuardrails } from './guardrails.js';
-import { TradingKeyProvider } from '../adapters/trading-key.provider.js';
 import { PolymarketAdapter } from '../adapters/polymarket.adapter.js';
 
+/**
+ * CopyEngine — Phase 2A
+ *
+ * Core copy-trading logic.  All signing is done through the
+ * TradingAuthorityProvider — no raw private keys are used.
+ *
+ * If the Dynamic API is unavailable, the engine pauses (SIGNING_UNAVAILABLE)
+ * and the circuit breaker opens.
+ */
 export class CopyEngine {
   private circuitBreaker = new CircuitBreaker();
-  private keyProvider = new TradingKeyProvider();
 
   constructor(
     private prisma: PrismaClient,
     private logger: Logger,
+    private tradingAuthority: TradingAuthorityProvider,
   ) {}
 
   async processLeaderEvent(event: {
@@ -55,6 +65,7 @@ export class CopyEngine {
             copyProfile: true,
             wallets: true,
             polymarketCredentials: true,
+            serverWallet: true,
           },
         },
       },
@@ -119,7 +130,7 @@ export class CopyEngine {
         leaderSide: leaderEvent.side,
         leaderPrice: leaderEvent.price,
         leaderSize: leaderEvent.size,
-        currentBalance: 0, // TODO: fetch real balance
+        currentBalance: 0, // TODO: fetch real balance from position sync
       });
 
       if (!result.allowed) {
@@ -131,25 +142,57 @@ export class CopyEngine {
         return;
       }
 
-      // Execute the copy trade
-      const tradingWallet = user.wallets.find((w: any) => w.type === 'TRADING_EOA');
+      // Get trading authority address and proxy
       const proxyWallet = user.wallets.find((w: any) => w.type === 'POLY_PROXY');
       const creds = user.polymarketCredentials;
 
-      if (!tradingWallet?.encPrivKey || !proxyWallet || !creds) {
+      if (!proxyWallet || !creds) {
         await this.prisma.copyAttempt.update({
           where: { id: attempt.id },
-          data: { status: 'FAILED', errorMessage: 'Missing wallet or credentials' },
+          data: { status: 'FAILED', errorMessage: 'Missing proxy wallet or credentials' },
         });
         return;
       }
 
-      const wallet = this.keyProvider.getWallet(tradingWallet.encPrivKey);
-      const adapter = new PolymarketAdapter(wallet, proxyWallet.address, {
-        key: creds.apiKey,
-        secret: creds.apiSecret,
-        passphrase: creds.passphrase,
-      });
+      // Check server wallet is ready
+      const serverWallet = user.serverWallet;
+      const tradingEoa = user.wallets.find((w: any) => w.type === 'TRADING_EOA');
+
+      if (!serverWallet?.address && !tradingEoa) {
+        await this.prisma.copyAttempt.update({
+          where: { id: attempt.id },
+          data: { status: 'FAILED', errorMessage: 'No trading authority available' },
+        });
+        return;
+      }
+
+      // Prefer server wallet, fall back to getting address from provider
+      let tradingAddress: string;
+      try {
+        tradingAddress = await this.tradingAuthority.getAddress(user.id);
+      } catch (error) {
+        // Dynamic API unavailable — SIGNING_UNAVAILABLE
+        const message = error instanceof Error ? error.message : 'Signing unavailable';
+        await this.prisma.copyAttempt.update({
+          where: { id: attempt.id },
+          data: { status: 'FAILED', errorMessage: `SIGNING_UNAVAILABLE: ${message}` },
+        });
+        this.circuitBreaker.recordFailure();
+        this.logger.error({ userId: user.id, err: error }, 'Signing unavailable — copy paused');
+        return;
+      }
+
+      const adapter = new PolymarketAdapter(
+        this.tradingAuthority,
+        user.id,
+        tradingAddress,
+        proxyWallet.address,
+        {
+          key: creds.apiKey,
+          secret: creds.apiSecret,
+          passphrase: creds.passphrase,
+        },
+      );
 
       const orderResult = await adapter.createOrder({
         tokenId: leaderEvent.tokenId,

@@ -2,9 +2,11 @@ import { FastifyPluginAsync } from 'fastify';
 import { createOrderSchema, cancelOrderSchema, paginationSchema, NotFoundError } from '@mirrormarkets/shared';
 import { WalletService } from '../services/wallet.service.js';
 import { AuditService } from '../services/audit.service.js';
+import { getTradingAuthorityProvider } from '../adapters/trading-authority.factory.js';
 
 export const orderRoutes: FastifyPluginAsync = async (app) => {
-  const walletService = new WalletService(app.prisma);
+  const tradingAuthority = getTradingAuthorityProvider(app.prisma);
+  const walletService = new WalletService(app.prisma, tradingAuthority);
   const audit = new AuditService(app.prisma);
 
   // POST /orders

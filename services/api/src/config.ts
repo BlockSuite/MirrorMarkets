@@ -18,8 +18,15 @@ const configSchema = z.object({
   DYNAMIC_ENVIRONMENT_ID: z.string().default(''),
   DYNAMIC_PUBLIC_KEY: z.string().default(''),
 
-  // Trading key encryption
+  // Dynamic Server Wallets (Phase 2A)
+  DYNAMIC_API_KEY: z.string().default(''),
+  DYNAMIC_SERVER_WALLET_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+
+  // Trading key encryption (Phase 1 — kept for migration, will be removed post-migration)
   TRADING_KEY_ENCRYPTION_KEY: z.string().default('0'.repeat(64)),
+
+  // Phase 2A feature flag: when true, new users get Dynamic Server Wallets
+  USE_SERVER_WALLETS: z.coerce.boolean().default(true),
 
   // Polymarket
   POLYMARKET_CLOB_API_URL: z.string().default('https://clob.polymarket.com'),

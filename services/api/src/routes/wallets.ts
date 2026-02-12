@@ -1,10 +1,12 @@
 import { FastifyPluginAsync } from 'fastify';
 import { ProvisioningService } from '../services/provisioning.service.js';
 import { AuditService } from '../services/audit.service.js';
+import { getTradingAuthorityProvider } from '../adapters/trading-authority.factory.js';
 
 export const walletRoutes: FastifyPluginAsync = async (app) => {
   const audit = new AuditService(app.prisma);
-  const provisioning = new ProvisioningService(app.prisma, audit);
+  const tradingAuthority = getTradingAuthorityProvider(app.prisma);
+  const provisioning = new ProvisioningService(app.prisma, audit, tradingAuthority);
 
   // POST /wallets/provision
   app.post('/provision', {

@@ -11,8 +11,15 @@ datasource db {
 
 enum WalletType {
   DYNAMIC_EOA
-  TRADING_EOA
+  TRADING_EOA  // @deprecated Phase 1 only – removed after Phase 2A migration
+  SERVER_WALLET // Phase 2A: Dynamic Server Wallet (MPC-backed, replaces TRADING_EOA)
   POLY_PROXY
+}
+
+enum ServerWalletStatus {
+  CREATING
+  READY
+  FAILED
 }
 
 enum CopyProfileStatus {
@@ -90,6 +97,17 @@ enum AuditAction {
   AUTO_CLAIM_RUN
   SETTINGS_UPDATED
   ERROR
+  // Phase 2A additions
+  SERVER_WALLET_CREATED
+  SERVER_WALLET_FAILED
+  SIGNING_REQUESTED
+  SIGNING_COMPLETED
+  SIGNING_FAILED
+  MIGRATION_STARTED
+  MIGRATION_COMPLETED
+  MIGRATION_FAILED
+  PRIVATE_KEY_DESTROYED
+  OWNERSHIP_TRANSFERRED
 }
 
 // ─── Models ─────────────────────────────────────────
@@ -105,6 +123,7 @@ model User {
 
   authSessions          AuthSession[]
   wallets               Wallet[]
+  serverWallet          ServerWallet?
   polymarketCredentials PolymarketCredentials?
   copyProfile           CopyProfile?
   follows               Follow[]
@@ -148,6 +167,21 @@ model Wallet {
   @@unique([userId, type])
   @@index([address])
   @@map("wallets")
+}
+
+model ServerWallet {
+  id                    String             @id @default(cuid())
+  userId                String             @unique @map("user_id")
+  dynamicServerWalletId String             @unique @map("dynamic_server_wallet_id")
+  address               String
+  status                ServerWalletStatus @default(CREATING)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([address])
+  @@map("server_wallets")
 }
 
 model PolymarketCredentials {

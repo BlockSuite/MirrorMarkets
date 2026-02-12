@@ -2,7 +2,8 @@ import { ClobClient } from '@polymarket/clob-client';
 import { Side, AssetType } from '@polymarket/clob-client/dist/types.js';
 import { getConfig } from '../config.js';
 import { SIGNATURE_TYPE, POLYGON_CHAIN_ID } from '@mirrormarkets/shared';
-import { ethers } from 'ethers';
+import type { TradingAuthorityProvider } from '@mirrormarkets/shared';
+import { ServerWalletSigner } from './server-wallet-signer.js';
 
 export interface PolymarketApiCredentials {
   key: string;
@@ -17,19 +18,30 @@ export interface CreateOrderParams {
   price: number;
 }
 
+/**
+ * PolymarketAdapter — Phase 2A
+ *
+ * Wraps @polymarket/clob-client.  The signer is a ServerWalletSigner
+ * that delegates signMessage / signTypedData to the TradingAuthorityProvider
+ * instead of using a raw ethers.Wallet.
+ */
 export class PolymarketAdapter {
   private client: ClobClient;
 
   constructor(
-    private tradingWallet: ethers.Wallet,
-    private proxyAddress: string,
-    private credentials: PolymarketApiCredentials,
+    tradingAuthority: TradingAuthorityProvider,
+    userId: string,
+    tradingAddress: string,
+    proxyAddress: string,
+    credentials: PolymarketApiCredentials,
   ) {
     const config = getConfig();
+    const signer = new ServerWalletSigner(tradingAuthority, userId, tradingAddress);
+
     this.client = new ClobClient(
       config.POLYMARKET_CLOB_API_URL,
       POLYGON_CHAIN_ID,
-      tradingWallet as any, // ethers v6 Wallet -> v5 compat via any
+      signer as any, // ServerWalletSigner satisfies ethers v5 Signer ABI via duck-typing
       credentials,
       SIGNATURE_TYPE.POLY_PROXY,
       proxyAddress,
