@@ -21,12 +21,11 @@ FROM base AS runner
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/
-COPY --from=build /app/services/api/dist ./services/api/dist
-COPY --from=build /app/services/api/package.json ./services/api/
 COPY --from=build /app/services/workers/dist ./services/workers/dist
 COPY --from=build /app/services/workers/package.json ./services/workers/
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+RUN rm -rf node_modules/@mirrormarkets/shared && ln -s /app/packages/shared node_modules/@mirrormarkets/shared
 
 ENV NODE_ENV=production
 CMD ["node", "services/workers/dist/index.js"]
