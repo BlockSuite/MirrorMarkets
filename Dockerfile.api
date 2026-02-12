@@ -30,4 +30,4 @@ RUN mkdir -p node_modules/@mirrormarkets && ln -s /app/packages/shared node_modu
 
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["node", "services/api/dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema ./prisma/schema.prisma && node services/api/dist/index.js"]
