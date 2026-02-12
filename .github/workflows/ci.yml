@@ -29,6 +29,12 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install forge-std
+        run: forge install foundry-rs/forge-std --no-git --root packages/contracts
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
