@@ -11,22 +11,22 @@ export const leaderRoutes: FastifyPluginAsync = async (app) => {
     // Sync leaders to local DB
     for (const leader of leaders) {
       await app.prisma.leader.upsert({
-        where: { address: leader.address?.toLowerCase() ?? leader.userAddress?.toLowerCase() },
+        where: { address: leader.address },
         create: {
-          address: leader.address?.toLowerCase() ?? leader.userAddress?.toLowerCase(),
-          displayName: leader.displayName ?? leader.username ?? null,
-          profileImageUrl: leader.profileImage ?? null,
-          pnl: leader.pnl ?? 0,
-          volume: leader.volume ?? 0,
-          rank: leader.rank ?? null,
+          address: leader.address,
+          displayName: leader.displayName,
+          profileImageUrl: leader.profileImageUrl,
+          pnl: leader.pnl,
+          volume: leader.volume,
+          rank: leader.rank,
           lastSyncedAt: new Date(),
         },
         update: {
-          displayName: leader.displayName ?? leader.username ?? null,
-          profileImageUrl: leader.profileImage ?? null,
-          pnl: leader.pnl ?? 0,
-          volume: leader.volume ?? 0,
-          rank: leader.rank ?? null,
+          displayName: leader.displayName,
+          profileImageUrl: leader.profileImageUrl,
+          pnl: leader.pnl,
+          volume: leader.volume,
+          rank: leader.rank,
           lastSyncedAt: new Date(),
         },
       });

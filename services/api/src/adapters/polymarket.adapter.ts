@@ -5,6 +5,26 @@ import { SIGNATURE_TYPE, POLYGON_CHAIN_ID } from '@mirrormarkets/shared';
 import type { TradingAuthorityProvider } from '@mirrormarkets/shared';
 import { ServerWalletSigner } from './server-wallet-signer.js';
 
+export interface LeaderFromApi {
+  address: string;
+  displayName: string | null;
+  profileImageUrl: string | null;
+  pnl: number;
+  volume: number;
+  rank: number;
+}
+
+function normalizeLeader(raw: any): LeaderFromApi {
+  return {
+    address: raw.proxyWallet?.toLowerCase() ?? '',
+    displayName: raw.userName || null,
+    profileImageUrl: raw.profileImage || null,
+    pnl: raw.pnl ?? 0,
+    volume: raw.vol ?? 0,
+    rank: parseInt(raw.rank, 10) || 0,
+  };
+}
+
 export interface PolymarketApiCredentials {
   key: string;
   secret: string;
@@ -83,11 +103,14 @@ export class PolymarketAdapter {
     return this.client.getBalanceAllowance({ asset_type: AssetType.CONDITIONAL, token_id: tokenId });
   }
 
-  static async fetchLeaderboard(): Promise<any[]> {
+  static async fetchLeaderboard(): Promise<LeaderFromApi[]> {
     const config = getConfig();
-    const res = await fetch(`${config.POLYMARKET_GAMMA_API_URL}/leaderboard?window=all&limit=50`);
+    const res = await fetch(
+      `${config.POLYMARKET_DATA_API_URL}/v1/leaderboard?timePeriod=ALL&orderBy=PNL&limit=50`,
+    );
     if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
-    return res.json() as Promise<any[]>;
+    const raw = await res.json();
+    return (raw as any[]).map(normalizeLeader);
   }
 
   static async fetchUserTrades(address: string, limit = 50): Promise<any[]> {
@@ -99,10 +122,13 @@ export class PolymarketAdapter {
     return res.json() as Promise<any[]>;
   }
 
-  static async searchUsers(query: string): Promise<any[]> {
+  static async searchUsers(query: string): Promise<LeaderFromApi[]> {
     const config = getConfig();
-    const res = await fetch(`${config.POLYMARKET_GAMMA_API_URL}/search?query=${encodeURIComponent(query)}&type=user`);
+    const res = await fetch(
+      `${config.POLYMARKET_DATA_API_URL}/v1/leaderboard?userName=${encodeURIComponent(query)}&timePeriod=ALL&limit=20`,
+    );
     if (!res.ok) throw new Error(`User search failed: ${res.status}`);
-    return res.json() as Promise<any[]>;
+    const raw = await res.json();
+    return (raw as any[]).map(normalizeLeader);
   }
 }
