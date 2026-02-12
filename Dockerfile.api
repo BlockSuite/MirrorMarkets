@@ -25,7 +25,7 @@ COPY --from=build /app/services/api/dist ./services/api/dist
 COPY --from=build /app/services/api/package.json ./services/api/
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
-RUN rm -rf node_modules/@mirrormarkets/shared && ln -s /app/packages/shared node_modules/@mirrormarkets/shared
+RUN mkdir -p node_modules/@mirrormarkets && ln -s /app/packages/shared node_modules/@mirrormarkets/shared
 
 ENV NODE_ENV=production
 EXPOSE 3001
