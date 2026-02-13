@@ -30,9 +30,17 @@ export default function HomePage() {
       if (!jwt || cancelled) return false;
 
       try {
-        const res = await api.post<{ token: string }>('/auth/dynamic/verify', { token: jwt });
+        const res = await api.post<{ token: string; dynamicEoaAddress?: string | null }>('/auth/dynamic/verify', { token: jwt });
         if (!cancelled) {
           api.setToken(res.token);
+          // Auto-provision wallet (works for both email-only and wallet auth)
+          try {
+            await api.post('/wallets/provision', {
+              dynamicEoaAddress: res.dynamicEoaAddress ?? undefined,
+            });
+          } catch {
+            // Provisioning may fail if already done or not ready — continue to dashboard
+          }
           window.location.href = '/dashboard';
         }
         return true;

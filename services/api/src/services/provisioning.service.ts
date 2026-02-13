@@ -49,27 +49,27 @@ export class ProvisioningService {
       complete: false,
     };
 
-    // Complete when: identity + signing authority + proxy + creds + profile
+    // Complete when: signing authority + proxy + profile (EOA and creds are optional for email auth)
     const hasAuthority = status.serverWalletReady || status.tradingEoa;
     status.complete =
-      status.dynamicEoa &&
       hasAuthority &&
       status.polyProxy &&
-      status.clobApiKey &&
       status.copyProfile;
 
     return status;
   }
 
-  async provision(userId: string, dynamicEoaAddress: string, ipAddress?: string): Promise<ProvisioningStatus> {
+  async provision(userId: string, dynamicEoaAddress?: string, ipAddress?: string): Promise<ProvisioningStatus> {
     const config = getConfig();
 
-    // Step 1: Store Dynamic EOA (identity wallet)
-    await this.prisma.wallet.upsert({
-      where: { userId_type: { userId, type: 'DYNAMIC_EOA' } },
-      create: { userId, type: 'DYNAMIC_EOA', address: dynamicEoaAddress },
-      update: { address: dynamicEoaAddress },
-    });
+    // Step 1: Store Dynamic EOA (identity wallet) — skip if email-only auth
+    if (dynamicEoaAddress) {
+      await this.prisma.wallet.upsert({
+        where: { userId_type: { userId, type: 'DYNAMIC_EOA' } },
+        create: { userId, type: 'DYNAMIC_EOA', address: dynamicEoaAddress },
+        update: { address: dynamicEoaAddress },
+      });
+    }
 
     // Step 2: Create trading authority
     let tradingAddress: string;

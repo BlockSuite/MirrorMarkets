@@ -46,8 +46,10 @@ export function useProvisioningStatus() {
 export function useProvision() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dynamicEoaAddress: string) =>
-      api.post<ProvisioningStatus>('/wallets/provision', { dynamicEoaAddress }),
+    mutationFn: (dynamicEoaAddress: string | void) =>
+      api.post<ProvisioningStatus>('/wallets/provision', {
+        dynamicEoaAddress: dynamicEoaAddress || undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['provisioning-status'] });
       qc.invalidateQueries({ queryKey: ['me'] });
