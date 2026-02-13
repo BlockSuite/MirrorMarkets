@@ -67,6 +67,11 @@ export class DynamicServerWalletProvider implements TradingAuthorityProvider {
   async getAddress(userId: string): Promise<string> {
     const sw = await this.prisma.serverWallet.findUnique({ where: { userId } });
 
+    // Replace mock wallets from development/testing with real ones
+    if (sw && sw.dynamicServerWalletId.startsWith('mock-')) {
+      return this.createServerWallet(userId, true);
+    }
+
     if (sw && sw.status === 'READY') return sw.address;
     if (sw && sw.status === 'CREATING') {
       const fresh = await this.adapter.getWallet(sw.dynamicServerWalletId);
