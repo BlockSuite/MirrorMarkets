@@ -44,6 +44,14 @@ class ApiClient {
     });
 
     if (!res.ok) {
+      // Clear stale session on 401 and redirect to login
+      if (res.status === 401 && this.token) {
+        this.setToken(null);
+        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+      }
+
       const error: ApiError = await res.json().catch(() => ({
         code: 'UNKNOWN',
         message: res.statusText,

@@ -22,6 +22,7 @@ export function useMe() {
   return useQuery({
     queryKey: ['me'],
     queryFn: () => api.get<UserProfile>('/wallets/me'),
+    enabled: !!api.getToken(),
   });
 }
 
@@ -29,6 +30,7 @@ export function useMyWallets() {
   return useQuery({
     queryKey: ['me', 'wallets'],
     queryFn: () => api.get<WalletInfo[]>('/wallets/me/wallets'),
+    enabled: !!api.getToken(),
   });
 }
 
@@ -36,6 +38,7 @@ export function useProvisioningStatus() {
   return useQuery({
     queryKey: ['provisioning-status'],
     queryFn: () => api.get<ProvisioningStatus>('/wallets/me/provisioning-status'),
+    enabled: !!api.getToken(),
     refetchInterval: 5000,
   });
 }
@@ -82,6 +85,7 @@ export function useFollows() {
   return useQuery({
     queryKey: ['follows'],
     queryFn: () => api.get<FollowInfo[]>('/follows'),
+    enabled: !!api.getToken(),
   });
 }
 
@@ -173,6 +177,7 @@ export function useBalances() {
   return useQuery({
     queryKey: ['balances'],
     queryFn: () => api.get<{ usdc: number; positions: number; total: number }>('/portfolio/balances'),
+    enabled: !!api.getToken(),
     refetchInterval: 30_000,
   });
 }

@@ -12,13 +12,18 @@ export function WalletDropdown() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { handleLogOut } = useDynamicContext();
-  const { data: me } = useMe();
-  const { data: wallets } = useMyWallets();
+  const { user: dynamicUser, handleLogOut } = useDynamicContext();
+  const { data: me, isLoading: meLoading } = useMe();
+  const { data: wallets, isLoading: walletsLoading } = useMyWallets();
   const { data: balances } = useBalances();
 
   const primaryWallet = wallets?.find((w) => w.type === 'POLY_PROXY') ?? wallets?.find((w) => w.type === 'DYNAMIC_EOA');
   const address = primaryWallet?.address;
+
+  // Fallback to Dynamic SDK user info while API data loads
+  const displayName = me?.name ?? me?.email ?? dynamicUser?.email ?? 'User';
+  const displayEmail = me?.email ?? dynamicUser?.email;
+  const hasToken = !!api.getToken();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -52,11 +57,11 @@ export function WalletDropdown() {
           <img src={me.avatarUrl} alt="" className="h-6 w-6 rounded-full" />
         ) : (
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600">
-            {(me?.name ?? me?.email ?? '?')[0]?.toUpperCase()}
+            {displayName[0]?.toUpperCase() ?? '?'}
           </div>
         )}
         <span className="hidden text-gray-700 dark:text-gray-300 sm:inline">
-          {address ? shortenAddress(address) : 'Loading...'}
+          {address ? shortenAddress(address) : hasToken && walletsLoading ? 'Loading...' : displayName}
         </span>
         <ChevronDown className="h-4 w-4 text-gray-400" />
       </button>
@@ -66,10 +71,10 @@ export function WalletDropdown() {
           {/* User info */}
           <div className="mb-3 border-b border-gray-100 pb-3 dark:border-gray-800">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {me?.name ?? me?.email ?? 'User'}
+              {displayName}
             </p>
-            {me?.email && me?.name && (
-              <p className="text-xs text-gray-500">{me.email}</p>
+            {displayEmail && displayName !== displayEmail && (
+              <p className="text-xs text-gray-500">{displayEmail}</p>
             )}
           </div>
 

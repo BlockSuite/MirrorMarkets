@@ -1,36 +1,41 @@
 'use client';
 
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useDynamicContext, getAuthToken } from '@dynamic-labs/sdk-react-core';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { api } from '@/lib/api-client';
 
 export default function HomePage() {
-  const { user, primaryWallet, handleLogOut, setShowAuthFlow } = useDynamicContext();
+  const { user, handleLogOut, setShowAuthFlow } = useDynamicContext();
   const router = useRouter();
+  const verifying = useRef(false);
 
-  // Auto-redirect if already authenticated
+  // When Dynamic user is present, verify with backend and redirect
   useEffect(() => {
-    if (api.getToken() && user) {
+    if (!user) return;
+
+    // If we already have a valid session token, go straight to dashboard
+    if (api.getToken()) {
       router.replace('/dashboard');
+      return;
     }
-  }, [user, router]);
 
-  useEffect(() => {
-    if (user && primaryWallet) {
-      // Verify with backend
-      const token = (user as any).verifiedCredentials?.[0]?.oauthToken;
-      if (token) {
-        api
-          .post<{ token: string }>('/auth/dynamic/verify', { token })
-          .then((res) => {
-            api.setToken(res.token);
-            router.push('/dashboard');
-          })
-          .catch(console.error);
-      }
-    }
-  }, [user, primaryWallet, router]);
+    // Get the Dynamic JWT and verify with our backend
+    const dynamicJwt = getAuthToken();
+    if (!dynamicJwt || verifying.current) return;
+
+    verifying.current = true;
+    api
+      .post<{ token: string }>('/auth/dynamic/verify', { token: dynamicJwt })
+      .then((res) => {
+        api.setToken(res.token);
+        router.push('/dashboard');
+      })
+      .catch((err) => {
+        console.error('Auth verify failed:', err);
+        verifying.current = false;
+      });
+  }, [user, router]);
 
   const onLogout = async () => {
     api.setToken(null);
