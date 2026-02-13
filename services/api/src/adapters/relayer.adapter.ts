@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { Interface, getBytes, keccak256, toUtf8Bytes } from 'ethers';
 import type { TradingAuthorityProvider } from '@mirrormarkets/shared';
 import { POLYMARKET_CONTRACTS, POLYMARKET_URLS } from '@mirrormarkets/shared';
 
@@ -33,8 +33,8 @@ export class RelayerAdapter {
       ],
     };
 
-    const messageHash = ethers.getBytes(
-      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
+    const messageHash = getBytes(
+      keccak256(toUtf8Bytes(JSON.stringify(payload))),
     );
     const signature = await this.tradingAuthority.signMessage(this.userId, messageHash);
 
@@ -66,8 +66,8 @@ export class RelayerAdapter {
       ],
     };
 
-    const messageHash = ethers.getBytes(
-      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
+    const messageHash = getBytes(
+      keccak256(toUtf8Bytes(JSON.stringify(payload))),
     );
     const signature = await this.tradingAuthority.signMessage(this.userId, messageHash);
 
@@ -87,7 +87,7 @@ export class RelayerAdapter {
   }
 
   async redeemPositions(conditionId: string): Promise<string> {
-    const iface = new ethers.Interface([
+    const iface = new Interface([
       'function redeemPositions(bytes32 conditionId, uint256[] indexSets)',
     ]);
 
@@ -108,8 +108,8 @@ export class RelayerAdapter {
       ],
     };
 
-    const messageHash = ethers.getBytes(
-      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
+    const messageHash = getBytes(
+      keccak256(toUtf8Bytes(JSON.stringify(payload))),
     );
     const signature = await this.tradingAuthority.signMessage(this.userId, messageHash);
 
@@ -129,12 +129,12 @@ export class RelayerAdapter {
   }
 
   private encodeApprove(spender: string, amount: bigint): string {
-    const iface = new ethers.Interface(['function approve(address spender, uint256 amount)']);
+    const iface = new Interface(['function approve(address spender, uint256 amount)']);
     return iface.encodeFunctionData('approve', [spender, amount]);
   }
 
   private encodeTransfer(to: string, amount: bigint): string {
-    const iface = new ethers.Interface(['function transfer(address to, uint256 amount)']);
+    const iface = new Interface(['function transfer(address to, uint256 amount)']);
     return iface.encodeFunctionData('transfer', [to, amount]);
   }
 }

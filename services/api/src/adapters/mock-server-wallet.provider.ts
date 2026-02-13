@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { Wallet, ethers } from 'ethers';
+import { Wallet, keccak256, toUtf8Bytes } from 'ethers';
+import type { TypedDataDomain } from 'ethers';
 import { randomUUID } from 'crypto';
 import type {
   TradingAuthorityProvider,
@@ -48,7 +49,7 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
     await this.requireReady(userId);
 
     const signature = await signer.signTypedData(
-      typedData.domain as ethers.TypedDataDomain,
+      typedData.domain as TypedDataDomain,
       // Remove EIP712Domain from types if present
       Object.fromEntries(
         Object.entries(typedData.types).filter(([k]) => k !== 'EIP712Domain'),
@@ -64,7 +65,7 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
     await this.requireReady(userId);
 
     const msgBytes = typeof message === 'string'
-      ? ethers.toUtf8Bytes(message)
+      ? toUtf8Bytes(message)
       : message;
 
     return signer.signMessage(msgBytes);
@@ -73,13 +74,13 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
   async executeTransaction(userId: string, tx: TransactionRequest): Promise<TransactionResult> {
     await this.requireReady(userId);
     // Mock: return a deterministic fake hash
-    const hash = ethers.keccak256(ethers.toUtf8Bytes(`${userId}:${tx.to}:${tx.data}`));
+    const hash = keccak256(toUtf8Bytes(`${userId}:${tx.to}:${tx.data}`));
     return { hash, status: 'submitted' };
   }
 
   async rotate(userId: string): Promise<void> {
     // Generate a new deterministic key based on userId + timestamp
-    const newSeed = ethers.keccak256(ethers.toUtf8Bytes(`${userId}:${Date.now()}`));
+    const newSeed = keccak256(toUtf8Bytes(`${userId}:${Date.now()}`));
     const newWallet = new Wallet(newSeed);
     this.signers.set(userId, newWallet);
 
@@ -119,7 +120,7 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
 
   private ensureSigner(userId: string): Wallet {
     if (!this.signers.has(userId)) {
-      const seed = ethers.keccak256(ethers.toUtf8Bytes(userId));
+      const seed = keccak256(toUtf8Bytes(userId));
       this.signers.set(userId, new Wallet(seed));
     }
     return this.signers.get(userId)!;

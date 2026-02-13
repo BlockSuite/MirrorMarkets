@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { AppError, ErrorCodes, encryptPrivateKey, decryptPrivateKey, SAFE_MODULE } from '@mirrormarkets/shared';
 import type { SafeConstraints } from '@mirrormarkets/shared';
-import { ethers } from 'ethers';
+import { Wallet } from 'ethers';
 import { AuditService } from './audit.service.js';
 import { getConfig } from '../config.js';
 
@@ -140,7 +140,7 @@ export class SafeAutomationService {
     const config = getConfig();
 
     // Generate a new session key pair
-    const wallet = ethers.Wallet.createRandom();
+    const wallet = Wallet.createRandom();
     const encryptedPrivateKey = encryptPrivateKey(
       wallet.privateKey,
       config.TRADING_KEY_ENCRYPTION_KEY,
@@ -236,7 +236,7 @@ export class SafeAutomationService {
     });
   }
 
-  async getActiveSessionKeyWallet(userId: string): Promise<ethers.Wallet | null> {
+  async getActiveSessionKeyWallet(userId: string): Promise<Wallet | null> {
     const automation = await this.prisma.safeAutomation.findUnique({
       where: { userId },
     });
@@ -264,7 +264,7 @@ export class SafeAutomationService {
 
     const config = getConfig();
     const privateKey = decryptPrivateKey(sk.encryptedPrivateKey, config.TRADING_KEY_ENCRYPTION_KEY);
-    return new ethers.Wallet(privateKey);
+    return new Wallet(privateKey);
   }
 
   // ── Withdrawal Allowlist ─────────────────────────────────────────

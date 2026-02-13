@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type Redis from 'ioredis';
 import type { Logger } from 'pino';
-import { ethers } from 'ethers';
+import { Wallet, JsonRpcProvider, Contract, parseUnits } from 'ethers';
 import { decryptPrivateKey, POLYMARKET_CONTRACTS } from '@mirrormarkets/shared';
 
 // ABI for executeFromSessionKey
@@ -132,12 +132,12 @@ export class ModuleExecWorker {
       return;
     }
 
-    let sessionKeyWallet: ethers.Wallet;
+    let sessionKeyWallet: Wallet;
     try {
       const privateKey = decryptPrivateKey(activeSessionKey.encryptedPrivateKey, encryptionKey);
       const rpcUrl = process.env.POLYGON_RPC_URL ?? 'https://polygon-rpc.com';
-      const provider = new ethers.JsonRpcProvider(rpcUrl);
-      sessionKeyWallet = new ethers.Wallet(privateKey, provider);
+      const provider = new JsonRpcProvider(rpcUrl);
+      sessionKeyWallet = new Wallet(privateKey, provider);
     } catch (error) {
       await this.prisma.moduleTx.update({
         where: { id: tx.id },
@@ -153,7 +153,7 @@ export class ModuleExecWorker {
     });
 
     // Build module call
-    const moduleContract = new ethers.Contract(
+    const moduleContract = new Contract(
       automation.moduleAddress,
       MODULE_ABI,
       sessionKeyWallet,
@@ -165,7 +165,7 @@ export class ModuleExecWorker {
         tx.targetContract,
         0, // value (no ETH)
         tx.callData,
-        ethers.parseUnits(String(tx.notionalUsd ?? 0), 6), // notional in USDC decimals
+        parseUnits(String(tx.notionalUsd ?? 0), 6), // notional in USDC decimals
       );
 
       const receipt = await txResponse.wait();

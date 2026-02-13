@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { Wallet, ethers } from 'ethers';
+import { Wallet, keccak256, toUtf8Bytes } from 'ethers';
+import type { TypedDataDomain } from 'ethers';
 import { randomUUID } from 'crypto';
 import type {
   TradingAuthorityProvider,
@@ -30,7 +31,7 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
   async signTypedData(userId: string, typedData: EIP712TypedData): Promise<string> {
     const signer = this.ensureSigner(userId);
     return signer.signTypedData(
-      typedData.domain as ethers.TypedDataDomain,
+      typedData.domain as TypedDataDomain,
       Object.fromEntries(Object.entries(typedData.types).filter(([k]) => k !== 'EIP712Domain')),
       typedData.message,
     );
@@ -38,18 +39,18 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
 
   async signMessage(userId: string, message: string | Uint8Array): Promise<string> {
     const signer = this.ensureSigner(userId);
-    const msgBytes = typeof message === 'string' ? ethers.toUtf8Bytes(message) : message;
+    const msgBytes = typeof message === 'string' ? toUtf8Bytes(message) : message;
     return signer.signMessage(msgBytes);
   }
 
   async executeTransaction(userId: string, tx: TransactionRequest): Promise<TransactionResult> {
-    const hash = ethers.keccak256(ethers.toUtf8Bytes(`${userId}:${tx.to}:${tx.data}`));
+    const hash = keccak256(toUtf8Bytes(`${userId}:${tx.to}:${tx.data}`));
     return { hash, status: 'submitted' };
   }
 
   private ensureSigner(userId: string): Wallet {
     if (!this.signers.has(userId)) {
-      const seed = ethers.keccak256(ethers.toUtf8Bytes(userId));
+      const seed = keccak256(toUtf8Bytes(userId));
       this.signers.set(userId, new Wallet(seed));
     }
     return this.signers.get(userId)!;

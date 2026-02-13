@@ -5,7 +5,7 @@ import {
   hashBindingProof,
 } from '@mirrormarkets/shared';
 import { AppError, ErrorCodes } from '@mirrormarkets/shared';
-import { ethers } from 'ethers';
+import { verifyMessage } from 'ethers';
 
 /**
  * Binding Proof routes
@@ -100,7 +100,7 @@ export const bindingProofRoutes: FastifyPluginAsync = async (app) => {
     );
 
     try {
-      const recoveredAddress = ethers.verifyMessage(message, parsed.signature);
+      const recoveredAddress = verifyMessage(message, parsed.signature);
       if (recoveredAddress.toLowerCase() !== parsed.embeddedWalletAddress.toLowerCase()) {
         throw new AppError(
           ErrorCodes.BINDING_PROOF_INVALID,

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ethers } from 'ethers';
+import { Wallet, keccak256, toUtf8Bytes, getBytes, verifyMessage } from 'ethers';
+import type { TypedDataDomain } from 'ethers';
 import type { TradingAuthorityProvider, EIP712TypedData } from '@mirrormarkets/shared';
 import { ServerWalletSigner } from '../adapters/server-wallet-signer.js';
 
@@ -11,16 +12,16 @@ import { ServerWalletSigner } from '../adapters/server-wallet-signer.js';
  * to verify signature validity and recovery.
  */
 
-function createRealMockProvider(): TradingAuthorityProvider & { _wallet: ethers.Wallet } {
-  const seed = ethers.keccak256(ethers.toUtf8Bytes('integration-test-user'));
-  const wallet = new ethers.Wallet(seed);
+function createRealMockProvider(): TradingAuthorityProvider & { _wallet: Wallet } {
+  const seed = keccak256(toUtf8Bytes('integration-test-user'));
+  const wallet = new Wallet(seed);
 
   return {
     _wallet: wallet,
     getAddress: async () => wallet.address,
     signTypedData: async (_userId: string, typedData: EIP712TypedData) => {
       return wallet.signTypedData(
-        typedData.domain as ethers.TypedDataDomain,
+        typedData.domain as TypedDataDomain,
         Object.fromEntries(
           Object.entries(typedData.types).filter(([k]) => k !== 'EIP712Domain'),
         ),
@@ -29,7 +30,7 @@ function createRealMockProvider(): TradingAuthorityProvider & { _wallet: ethers.
     },
     signMessage: async (_userId: string, message: string | Uint8Array) => {
       const msgBytes = typeof message === 'string'
-        ? ethers.toUtf8Bytes(message)
+        ? toUtf8Bytes(message)
         : message;
       return wallet.signMessage(msgBytes);
     },
@@ -49,7 +50,7 @@ describe('Order placement uses server wallet (integration)', () => {
     const message = 'order-payload-hash-example';
     const signature = await signer.signMessage(message);
 
-    const recovered = ethers.verifyMessage(message, signature);
+    const recovered = verifyMessage(message, signature);
     expect(recovered).toBe(provider._wallet.address);
   });
 
@@ -120,12 +121,12 @@ describe('Claim uses server wallet (integration)', () => {
       ],
     };
 
-    const messageHash = ethers.getBytes(
-      ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload))),
+    const messageHash = getBytes(
+      keccak256(toUtf8Bytes(JSON.stringify(payload))),
     );
 
     const signature = await provider.signMessage('test-user', messageHash);
-    const recovered = ethers.verifyMessage(messageHash, signature);
+    const recovered = verifyMessage(messageHash, signature);
     expect(recovered).toBe(provider._wallet.address);
   });
 });
@@ -133,13 +134,13 @@ describe('Claim uses server wallet (integration)', () => {
 describe('Migration test: legacy key → server wallet', () => {
   it('verifies that same user can sign with new derived key', async () => {
     // Simulate old Phase 1 key
-    const oldWallet = ethers.Wallet.createRandom();
+    const oldWallet = Wallet.createRandom();
     const oldAddress = oldWallet.address;
 
     // Simulate new Phase 2A key (deterministic from userId)
     const userId = 'migrated-user-001';
-    const newSeed = ethers.keccak256(ethers.toUtf8Bytes(userId));
-    const newWallet = new ethers.Wallet(newSeed);
+    const newSeed = keccak256(toUtf8Bytes(userId));
+    const newWallet = new Wallet(newSeed);
     const newAddress = newWallet.address;
 
     // Keys should be different (migration creates a new identity)
@@ -147,7 +148,7 @@ describe('Migration test: legacy key → server wallet', () => {
 
     // New wallet can sign
     const sig = await newWallet.signMessage('post-migration-test');
-    const recovered = ethers.verifyMessage('post-migration-test', sig);
+    const recovered = verifyMessage('post-migration-test', sig);
     expect(recovered).toBe(newAddress);
   });
 
