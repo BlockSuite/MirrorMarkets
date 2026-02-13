@@ -28,9 +28,7 @@ export class DynamicAdapter {
         this.publicKey = await jose.importSPKI(config.DYNAMIC_PUBLIC_KEY, 'RS256');
       }
 
-      const { payload } = await jose.jwtVerify(token, this.publicKey, {
-        issuer: 'app.dynamic.xyz',
-      });
+      const { payload } = await jose.jwtVerify(token, this.publicKey);
 
       const dynamicPayload = payload as unknown as DynamicJwtPayload;
 
