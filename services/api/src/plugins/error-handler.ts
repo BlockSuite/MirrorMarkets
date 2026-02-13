@@ -25,7 +25,10 @@ const errorHandlerImpl: FastifyPluginAsync = async (app) => {
       });
     }
 
-    request.log.error({ err: error }, 'Unhandled error');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    request.log.error({ err: error }, `Unhandled error: ${errorMessage}`);
+    if (errorStack) request.log.error(errorStack);
 
     return reply.status(500).send({
       code: ErrorCodes.INTERNAL_ERROR,

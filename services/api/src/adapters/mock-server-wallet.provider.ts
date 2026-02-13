@@ -129,26 +129,20 @@ export class MockDynamicServerWalletProvider implements TradingAuthorityProvider
     const signer = this.ensureSigner(userId);
     const mockDynamicId = `mock-${randomUUID()}`;
 
-    const existing = await this.prisma.serverWallet.findUnique({ where: { userId } });
-    if (existing) {
-      await this.prisma.serverWallet.update({
-        where: { id: existing.id },
-        data: {
-          dynamicServerWalletId: mockDynamicId,
-          address: signer.address,
-          status: 'READY',
-        },
-      });
-    } else {
-      await this.prisma.serverWallet.create({
-        data: {
-          userId,
-          dynamicServerWalletId: mockDynamicId,
-          address: signer.address,
-          status: 'READY',
-        },
-      });
-    }
+    await this.prisma.serverWallet.upsert({
+      where: { userId },
+      create: {
+        userId,
+        dynamicServerWalletId: mockDynamicId,
+        address: signer.address,
+        status: 'READY',
+      },
+      update: {
+        dynamicServerWalletId: mockDynamicId,
+        address: signer.address,
+        status: 'READY',
+      },
+    });
 
     await this.prisma.wallet.upsert({
       where: { userId_type: { userId, type: 'SERVER_WALLET' } },

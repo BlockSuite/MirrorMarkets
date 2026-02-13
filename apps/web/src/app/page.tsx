@@ -25,6 +25,8 @@ export default function HomePage() {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const tryVerify = async (): Promise<boolean> => {
+      // Already verified by onAuthSuccess in providers.tsx
+      if (api.getToken()) return true;
       const jwt = getAuthToken();
       console.log('[auth] tryVerify - jwt:', jwt ? `present (${jwt.substring(0, 20)}...)` : 'null');
       if (!jwt || cancelled) return false;

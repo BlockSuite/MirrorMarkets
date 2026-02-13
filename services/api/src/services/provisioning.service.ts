@@ -123,25 +123,11 @@ export class ProvisioningService {
     }
 
     // Step 4: Store proxy address (placeholder — relayer deploys on first tx)
-    const existingProxy = await this.prisma.wallet.findUnique({
+    await this.prisma.wallet.upsert({
       where: { userId_type: { userId, type: 'POLY_PROXY' } },
+      create: { userId, type: 'POLY_PROXY', address: tradingAddress },
+      update: { address: tradingAddress },
     });
-
-    if (!existingProxy) {
-      // Proxy address is deterministic from the trading authority address
-      // via CREATE2.  Store the trading address as placeholder — the
-      // actual proxy will be written after the first relayer transaction.
-      await this.prisma.wallet.create({
-        data: { userId, type: 'POLY_PROXY', address: tradingAddress },
-      });
-
-      await this.audit.log({
-        userId,
-        action: 'PROXY_DEPLOYED',
-        details: { address: tradingAddress, note: 'placeholder — relayer deploys on first tx' },
-        ipAddress,
-      });
-    }
 
     // Step 5: Create default copy profile
     await this.prisma.copyProfile.upsert({
