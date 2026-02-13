@@ -26,6 +26,7 @@ export default function HomePage() {
 
     const tryVerify = async (): Promise<boolean> => {
       const jwt = getAuthToken();
+      console.log('[auth] tryVerify - jwt:', jwt ? `present (${jwt.substring(0, 20)}...)` : 'null');
       if (!jwt || cancelled) return false;
 
       try {
