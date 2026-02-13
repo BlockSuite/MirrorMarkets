@@ -25,9 +25,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID ?? '',
         walletConnectors: [EthereumWalletConnectors],
         events: {
-          onAuthSuccess: async () => {
+          onAuthSuccess: async ({ user: authUser }) => {
             // Dynamic auth complete — verify with our backend and get a session token
             const dynamicJwt = getAuthToken();
+            console.log('[auth] onAuthSuccess fired, user:', authUser?.email, 'jwt:', dynamicJwt ? 'present' : 'null', 'existingToken:', !!api.getToken());
             if (!dynamicJwt || api.getToken()) return;
 
             try {
