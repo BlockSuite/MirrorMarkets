@@ -24,6 +24,7 @@ COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/
 COPY --from=build /app/services/workers/dist ./services/workers/dist
 COPY --from=build /app/services/workers/package.json ./services/workers/
+COPY --from=build /app/services/workers/node_modules ./services/workers/node_modules
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 RUN mkdir -p node_modules/@mirrormarkets && ln -s /app/packages/shared node_modules/@mirrormarkets/shared
