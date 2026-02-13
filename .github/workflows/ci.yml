@@ -48,5 +48,25 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
+      - name: Test with coverage
+        run: pnpm turbo test:coverage --filter=@mirrormarkets/shared --filter=@mirrormarkets/api --filter=@mirrormarkets/workers
+
+      - name: Test contracts
+        run: pnpm turbo test --filter=@mirrormarkets/contracts
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for pkg in packages/shared services/api services/workers; do
+            name=$(basename $pkg)
+            report="$pkg/coverage/coverage-summary.json"
+            if [ -f "$report" ]; then
+              pct=$(node -e "const d=require('./$report').total; console.log('| ' + '$name' + ' | ' + d.lines.pct + '% | ' + d.branches.pct + '% | ' + d.functions.pct + '% | ' + d.statements.pct + '% |')")
+              rows="${rows}${pct}\n"
+            fi
+          done
+          echo "| Package | Lines | Branches | Functions | Statements |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|----------|-----------|------------|" >> $GITHUB_STEP_SUMMARY
+          echo -e "$rows" >> $GITHUB_STEP_SUMMARY

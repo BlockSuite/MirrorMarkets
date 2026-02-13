@@ -10,6 +10,7 @@
     "lint": "tsc --noEmit",
     "start": "node dist/index.js",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=json-summary",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "pino": "^9.5.0"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",
     "vitest": "^2.1.0"
