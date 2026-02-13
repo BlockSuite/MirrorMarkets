@@ -12,11 +12,11 @@ export const walletRoutes: FastifyPluginAsync = async (app) => {
   app.post('/provision', {
     preHandler: [app.authenticate],
   }, async (request, reply) => {
-    const { dynamicEoaAddress } = request.body as { dynamicEoaAddress: string };
+    const { dynamicEoaAddress } = (request.body ?? {}) as { dynamicEoaAddress?: string };
 
     const status = await provisioning.provision(
       request.userId,
-      dynamicEoaAddress,
+      dynamicEoaAddress || undefined,
       request.ip,
     );
 

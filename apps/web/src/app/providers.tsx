@@ -32,8 +32,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
             if (!dynamicJwt || api.getToken()) return;
 
             try {
-              const res = await api.post<{ token: string }>('/auth/dynamic/verify', { token: dynamicJwt });
+              const res = await api.post<{ token: string; dynamicEoaAddress?: string | null }>('/auth/dynamic/verify', { token: dynamicJwt });
               api.setToken(res.token);
+              // Auto-provision wallet
+              try {
+                await api.post('/wallets/provision', {
+                  dynamicEoaAddress: res.dynamicEoaAddress ?? undefined,
+                });
+              } catch {
+                // Continue even if provisioning fails
+              }
               window.location.href = '/dashboard';
             } catch (err) {
               console.error('Backend auth verify failed:', err);

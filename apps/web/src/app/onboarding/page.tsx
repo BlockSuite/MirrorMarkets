@@ -17,7 +17,6 @@ const STEPS = [
 export default function OnboardingPage() {
   const { data: status, isLoading } = useProvisioningStatus();
   const provision = useProvision();
-  const { primaryWallet } = useDynamicContext();
   const router = useRouter();
 
   useEffect(() => {
@@ -27,8 +26,7 @@ export default function OnboardingPage() {
   }, [status?.complete, router]);
 
   const handleProvision = () => {
-    if (!primaryWallet?.address) return;
-    provision.mutate(primaryWallet.address);
+    provision.mutate();
   };
 
   return (

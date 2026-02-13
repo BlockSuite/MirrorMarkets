@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Copy, Check, CheckCircle, Circle, Loader2 } from 'lucide-react';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useProvisioningStatus, useProvision } from '@/hooks/useApi';
 
 interface Props {
@@ -47,7 +46,6 @@ export function DepositCard({ address }: Props) {
 
 function ProvisioningChecklist() {
   const { data: status, isLoading } = useProvisioningStatus();
-  const { setShowAuthFlow, primaryWallet } = useDynamicContext();
   const provision = useProvision();
 
   if (isLoading) {
@@ -65,17 +63,11 @@ function ProvisioningChecklist() {
 
   const steps = [
     {
-      label: 'Connect wallet',
-      done: status.dynamicEoa,
-      action: !status.dynamicEoa ? () => setShowAuthFlow(true) : undefined,
-      actionLabel: 'Connect',
-    },
-    {
       label: 'Create server wallet',
       done: status.serverWalletReady,
       inProgress: status.serverWalletCreating,
-      action: !status.serverWallet && status.dynamicEoa && primaryWallet
-        ? () => provision.mutate(primaryWallet.address)
+      action: !status.serverWallet
+        ? () => provision.mutate()
         : undefined,
       actionLabel: 'Create',
     },
