@@ -19,11 +19,15 @@ export class DynamicAdapter {
 
   async verifyToken(token: string): Promise<DynamicJwtPayload> {
     const config = getConfig();
-    if (!this.publicKey) {
-      this.publicKey = await jose.importSPKI(config.DYNAMIC_PUBLIC_KEY, 'RS256');
-    }
 
     try {
+      if (!this.publicKey) {
+        if (!config.DYNAMIC_PUBLIC_KEY) {
+          throw new Error('DYNAMIC_PUBLIC_KEY is not configured');
+        }
+        this.publicKey = await jose.importSPKI(config.DYNAMIC_PUBLIC_KEY, 'RS256');
+      }
+
       const { payload } = await jose.jwtVerify(token, this.publicKey, {
         issuer: 'app.dynamic.xyz',
       });
