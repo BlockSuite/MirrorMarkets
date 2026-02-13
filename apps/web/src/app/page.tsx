@@ -1,6 +1,6 @@
 'use client';
 
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useDynamicContext, getAuthToken } from '@dynamic-labs/sdk-react-core';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { api } from '@/lib/api-client';
@@ -9,11 +9,56 @@ export default function HomePage() {
   const { user, handleLogOut, setShowAuthFlow } = useDynamicContext();
   const router = useRouter();
 
-  // Returning user with a valid session token — go straight to dashboard
   useEffect(() => {
-    if (api.getToken() && user) {
+    if (!user) return;
+
+    // Already have a backend session — go to dashboard
+    if (api.getToken()) {
       router.replace('/dashboard');
+      return;
     }
+
+    // User is authenticated with Dynamic but has no backend session.
+    // Poll for the Dynamic JWT (may not be available immediately) and verify.
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const tryVerify = async (): Promise<boolean> => {
+      const jwt = getAuthToken();
+      if (!jwt || cancelled) return false;
+
+      try {
+        const res = await api.post<{ token: string }>('/auth/dynamic/verify', { token: jwt });
+        if (!cancelled) {
+          api.setToken(res.token);
+          window.location.href = '/dashboard';
+        }
+        return true;
+      } catch (err) {
+        console.error('Auth verify failed:', err);
+        return false;
+      }
+    };
+
+    // Try immediately, then poll every 300ms until the JWT is available
+    tryVerify().then((ok) => {
+      if (ok || cancelled) return;
+      intervalId = setInterval(async () => {
+        const ok = await tryVerify();
+        if (ok || cancelled) clearInterval(intervalId);
+      }, 300);
+      timeoutId = setTimeout(() => {
+        cancelled = true;
+        clearInterval(intervalId);
+      }, 15_000);
+    });
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
   }, [user, router]);
 
   const onLogout = async () => {
@@ -45,7 +90,7 @@ export default function HomePage() {
           </button>
         ) : (
           <p className="text-gray-600 dark:text-gray-400">
-            Redirecting to dashboard...
+            Signing in...
           </p>
         )}
       </div>
