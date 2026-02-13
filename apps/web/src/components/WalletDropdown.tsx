@@ -43,8 +43,14 @@ export function WalletDropdown() {
   };
 
   const onLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore errors — session may already be expired
+    }
     api.setToken(null);
     await handleLogOut();
+    window.location.href = '/';
   };
 
   return (
