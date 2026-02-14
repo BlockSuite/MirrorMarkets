@@ -1,7 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { AppError, ErrorCodes } from '@mirrormarkets/shared';
-import { ZodError } from 'zod';
 
 const errorHandlerImpl: FastifyPluginAsync = async (app) => {
   app.setErrorHandler((error: any, request, reply) => {
@@ -9,7 +8,8 @@ const errorHandlerImpl: FastifyPluginAsync = async (app) => {
       return reply.status(error.statusCode).send(error.toJSON());
     }
 
-    if (error instanceof ZodError) {
+    // Use duck-typing instead of instanceof to handle multiple Zod copies
+    if (error?.name === 'ZodError' && Array.isArray(error?.issues)) {
       return reply.status(400).send({
         code: ErrorCodes.VALIDATION_ERROR,
         message: 'Validation failed',

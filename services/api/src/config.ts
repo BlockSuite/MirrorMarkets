@@ -28,6 +28,9 @@ const configSchema = z.object({
   // Phase 2A feature flag: when true, new users get Dynamic Server Wallets
   USE_SERVER_WALLETS: z.coerce.boolean().default(true),
 
+  // Polygon RPC
+  POLYGON_RPC_URL: z.string().default('https://polygon-rpc.com'),
+
   // Polymarket
   POLYMARKET_CLOB_API_URL: z.string().default('https://clob.polymarket.com'),
   POLYMARKET_GAMMA_API_URL: z.string().default('https://gamma-api.polymarket.com'),

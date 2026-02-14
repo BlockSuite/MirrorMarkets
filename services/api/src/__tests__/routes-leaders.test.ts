@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { AppError, ErrorCodes } from '@mirrormarkets/shared';
-import { ZodError } from 'zod';
 
 // ── Mock Prisma data ─────────────────────────────────────────────────────────
 
@@ -98,7 +97,7 @@ async function buildApp(mockPrisma: ReturnType<typeof createMockPrisma>) {
         if (error instanceof AppError) {
           return reply.status(error.statusCode).send(error.toJSON());
         }
-        if (error instanceof ZodError) {
+        if (error?.name === 'ZodError' && Array.isArray(error?.issues)) {
           return reply.status(400).send({
             code: ErrorCodes.VALIDATION_ERROR,
             message: 'Validation failed',

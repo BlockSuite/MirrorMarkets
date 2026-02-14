@@ -134,7 +134,7 @@ export class DynamicServerWalletProvider implements TradingAuthorityProvider {
 
     try {
       const result = await this.retryWithBackoff(
-        () => this.adapter.sendTransaction(sw.dynamicServerWalletId, tx),
+        () => this.adapter.sendTransaction(sw.address, tx),
       );
 
       await this.signingService.markSucceeded(requestId, result.hash);
@@ -229,7 +229,7 @@ export class DynamicServerWalletProvider implements TradingAuthorityProvider {
     await this.signingService.markSent(requestId);
 
     try {
-      const signature = await this.retryWithBackoff(() => execute(sw.dynamicServerWalletId));
+      const signature = await this.retryWithBackoff(() => execute(sw.address));
 
       await this.signingService.markSucceeded(requestId, signature);
       await this.circuitBreaker.recordSuccess();
